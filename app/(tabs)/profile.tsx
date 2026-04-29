@@ -1,3 +1,4 @@
+import { API_URL } from "@/constants"
 import { Colors } from "@/constants/colors"
 import { useAuthStore } from "@/store/authStore"
 import { router } from "expo-router"
@@ -52,7 +53,7 @@ export default function ProfileScreen() {
     setLoading(true)
     try {
       const response = await fetch(
-        `http://localhost:5000/api/auth/update-profile`,
+        `${API_URL}/auth/update-profile`,
         {
           method: "PUT",
           headers: {

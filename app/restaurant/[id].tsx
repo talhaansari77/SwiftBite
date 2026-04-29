@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native"
 import { useState, useEffect } from "react"
 import { router, useLocalSearchParams } from "expo-router"
@@ -33,6 +34,7 @@ interface Restaurant {
   minimumOrder: number
   address: string
   isOpen: boolean
+  image: string
 }
 
 export default function RestaurantScreen() {
@@ -97,11 +99,19 @@ export default function RestaurantScreen() {
 
         {/* Header Image */}
         <View style={styles.heroImage}>
-          <Text style={styles.heroEmoji}>
-            {restaurant?.cuisine === "American" ? "🍔" :
-             restaurant?.cuisine === "Italian" ? "🍕" :
-             restaurant?.cuisine === "Japanese" ? "🍣" : "🍽️"}
-          </Text>
+  {restaurant?.image ? (
+    <Image
+      source={{ uri: restaurant.image }}
+      style={styles.heroImageFull}
+      resizeMode="cover"
+    />
+  ) : (
+    <Text style={styles.heroEmoji}>
+      {restaurant?.cuisine === "American" ? "🍔" :
+       restaurant?.cuisine === "Italian" ? "🍕" :
+       restaurant?.cuisine === "Japanese" ? "🍣" : "🍽️"}
+    </Text>
+  )}
 
           {/* Back button */}
           <TouchableOpacity
@@ -255,6 +265,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  heroImageFull: {
+  width: "100%",
+  height: "100%",
+},
   heroImage: {
     height: 220,
     backgroundColor: Colors.lightGray,

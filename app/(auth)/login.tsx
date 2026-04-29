@@ -12,6 +12,7 @@ import { useState } from "react"
 import { router } from "expo-router"
 import { useAuthStore } from "@/store/authStore"
 import { Colors } from "@/constants/colors"
+import { API_URL } from "@/constants"
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("")
@@ -30,7 +31,7 @@ export default function LoginScreen() {
     setError("")
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

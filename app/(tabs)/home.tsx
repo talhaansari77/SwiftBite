@@ -8,6 +8,7 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from "react-native"
 import { useState, useEffect } from "react"
 import { router } from "expo-router"
@@ -25,6 +26,7 @@ interface Restaurant {
   deliveryFee: number
   isOpen: boolean
   address: string
+  image: string
 }
 
 const CATEGORIES = [
@@ -82,13 +84,21 @@ export default function HomeScreen() {
       onPress={() => router.push(`/restaurant/${item._id}`)}
     >
       {/* Image placeholder */}
-      <View style={styles.cardImage}>
-        <Text style={styles.cardEmoji}>
-          {item.cuisine === "American" ? "🍔" :
-           item.cuisine === "Italian" ? "🍕" :
-           item.cuisine === "Japanese" ? "🍣" : "🍽️"}
-        </Text>
-      </View>
+      {item.image ? (
+        <Image
+          source={{ uri: item.image }}
+          style={styles.cardImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.cardImagePlaceholder}>
+          <Text style={styles.cardEmoji}>
+            {item.cuisine === "American" ? "🍔" :
+              item.cuisine === "Italian" ? "🍕" :
+                item.cuisine === "Japanese" ? "🍣" : "🍽️"}
+          </Text>
+        </View>
+      )}
 
       {/* Open/Closed badge */}
       <View style={[
@@ -356,11 +366,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   cardImage: {
-    height: 160,
-    backgroundColor: Colors.lightGray,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  height: 160,
+  width: "100%",
+},
+cardImagePlaceholder: {
+  height: 160,
+  backgroundColor: Colors.lightGray,
+  justifyContent: "center",
+  alignItems: "center",
+},
   cardEmoji: {
     fontSize: 64,
   },

@@ -12,6 +12,7 @@ import {
 import { useState } from "react"
 import { router } from "expo-router"
 import { Colors } from "@/constants/colors"
+import { API_URL } from "@/constants"
 
 export default function RegisterScreen() {
   const [name, setName] = useState("")
@@ -42,7 +43,7 @@ export default function RegisterScreen() {
     setError("")
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, phone, password }),

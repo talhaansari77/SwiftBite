@@ -8,7 +8,7 @@ import {
   RefreshControl,
 } from "react-native"
 import { useState, useEffect, useCallback } from "react"
-import { useFocusEffect } from "expo-router"
+import { router, useFocusEffect } from "expo-router"
 import { ShoppingBag } from "lucide-react-native"
 import { Colors } from "@/constants/colors"
 import { useAuthStore } from "@/store/authStore"
@@ -117,7 +117,11 @@ export default function OrdersScreen() {
         >
           <View style={styles.ordersList}>
             {orders.map((order) => (
-              <View key={order._id} style={styles.orderCard}>
+              <TouchableOpacity
+                key={order._id}
+                style={styles.orderCard}
+                onPress={() => router.push(`/order/${order._id}`)}
+              >
 
                 {/* Order Header */}
                 <View style={styles.orderHeader}>
@@ -164,7 +168,7 @@ export default function OrdersScreen() {
                   </Text>
                 </View>
 
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
           <View style={{ height: 20 }} />

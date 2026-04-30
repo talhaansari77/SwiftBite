@@ -45,6 +45,7 @@ interface Order {
   status: string
   address: string
   paymentStatus: string
+  paymentMethod: string
   createdAt: string
 }
 
@@ -216,6 +217,12 @@ export default function OrderDetailScreen() {
               {order.paymentStatus.toUpperCase()}
             </Text>
           </View>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Payment Method</Text>
+          <Text style={styles.summaryValue}>
+            {order.paymentMethod === "cash" ? "💵 Cash on Delivery" : "💳 Online"}
+          </Text>
         </View>
 
         {/* Delivery Address */}

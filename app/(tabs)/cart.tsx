@@ -20,12 +20,13 @@ export default function CartScreen() {
     const { token, user } = useAuthStore()
     const address = user?.address || ""
     const [loading, setLoading] = useState(false)
+    const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash")
 
     const deliveryFee = 2.5
     const total = getTotalPrice() + deliveryFee
 
     const handlePlaceOrder = async () => {
-       
+
         if (!address || address.trim() === "") {
             Alert.alert(
                 "Address Required",
@@ -69,6 +70,7 @@ export default function CartScreen() {
                     restaurantId,
                     items: orderItems,
                     address,
+                    paymentMethod,
                 }),
             })
 
@@ -195,6 +197,54 @@ export default function CartScreen() {
                         {user?.address || "Tap to add delivery address"}
                     </Text>
                 </TouchableOpacity>
+                {/* Payment Method */}
+                <View style={styles.paymentCard}>
+                    <Text style={styles.paymentTitle}>💳 Payment Method</Text>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.paymentOption,
+                            paymentMethod === "cash" && styles.paymentOptionActive,
+                        ]}
+                        onPress={() => setPaymentMethod("cash")}
+                    >
+                        <Text style={styles.paymentOptionEmoji}>💵</Text>
+                        <View style={styles.paymentOptionInfo}>
+                            <Text style={styles.paymentOptionTitle}>Cash on Delivery</Text>
+                            <Text style={styles.paymentOptionDesc}>Pay when your order arrives</Text>
+                        </View>
+                        <View style={[
+                            styles.paymentRadio,
+                            paymentMethod === "cash" && styles.paymentRadioActive,
+                        ]}>
+                            {paymentMethod === "cash" && (
+                                <View style={styles.paymentRadioDot} />
+                            )}
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.paymentOption,
+                            paymentMethod === "online" && styles.paymentOptionActive,
+                        ]}
+                        onPress={() => setPaymentMethod("online")}
+                    >
+                        <Text style={styles.paymentOptionEmoji}>💳</Text>
+                        <View style={styles.paymentOptionInfo}>
+                            <Text style={styles.paymentOptionTitle}>Online Payment</Text>
+                            <Text style={styles.paymentOptionDesc}>Coming soon</Text>
+                        </View>
+                        <View style={[
+                            styles.paymentRadio,
+                            paymentMethod === "online" && styles.paymentRadioActive,
+                        ]}>
+                            {paymentMethod === "online" && (
+                                <View style={styles.paymentRadioDot} />
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                </View>
 
                 <View style={{ height: 100 }} />
             </ScrollView>
@@ -412,5 +462,65 @@ const styles = StyleSheet.create({
         color: Colors.white,
         fontSize: 16,
         fontFamily: "Poppins-Bold",
+    },
+    paymentCard: {
+        backgroundColor: Colors.white,
+        marginTop: 8,
+        padding: 20,
+    },
+    paymentTitle: {
+        fontSize: 14,
+        fontFamily: "Poppins-SemiBold",
+        color: Colors.black,
+        marginBottom: 12,
+    },
+    paymentOption: {
+        flexDirection: "row",
+        alignItems: "center",
+        padding: 14,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: Colors.border,
+        marginBottom: 10,
+        gap: 12,
+    },
+    paymentOptionActive: {
+        borderColor: Colors.primary,
+        backgroundColor: "#FFF5F2",
+    },
+    paymentOptionEmoji: {
+        fontSize: 24,
+    },
+    paymentOptionInfo: {
+        flex: 1,
+    },
+    paymentOptionTitle: {
+        fontSize: 14,
+        fontFamily: "Poppins-SemiBold",
+        color: Colors.black,
+    },
+    paymentOptionDesc: {
+        fontSize: 12,
+        fontFamily: "Poppins-Regular",
+        color: Colors.gray,
+        marginTop: 2,
+    },
+    paymentRadio: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: Colors.border,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    paymentRadioActive: {
+        borderColor: Colors.primary,
+    },
+    paymentRadioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: Colors.primary,
     },
 })

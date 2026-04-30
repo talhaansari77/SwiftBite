@@ -4,10 +4,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from "react-native"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { router, useLocalSearchParams } from "expo-router"
 import { ArrowLeft } from "lucide-react-native"
+import { io } from "socket.io-client"
 import { Colors } from "@/constants/colors"
 import { useAuthStore } from "@/store/authStore"
 import { API_URL } from "@/constants"
@@ -54,10 +56,41 @@ export default function OrderDetailScreen() {
   const { token } = useAuthStore()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
+  const socketRef = useRef<any>(null)
 
   useEffect(() => {
     fetchOrder()
+    setupSocket()
+
+    // Cleanup socket on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect()
+      }
+    }
   }, [])
+
+  const setupSocket = () => {
+    // Connect to the backend socket server
+    const SOCKET_URL = API_URL.replace("/api", "")
+    socketRef.current = io(SOCKET_URL, {
+      transports: ["websocket"],
+    })
+
+    // Join the room for this specific order
+    socketRef.current.on("connect", () => {
+      socketRef.current.emit("join_order", id)
+    })
+
+    // Listen for real-time order status updates
+    socketRef.current.on("order_status_update", (data: any) => {
+      // Update the order status in state
+      setOrder((prev) => prev ? { ...prev, status: data.status } : prev)
+
+      // Show alert to customer
+      Alert.alert("Order Update 📦", data.message)
+    })
+  }
 
   const fetchOrder = async () => {
     try {
@@ -118,6 +151,12 @@ export default function OrderDetailScreen() {
               minute: "2-digit",
             })}
           </Text>
+
+          {/* Live indicator */}
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>Live tracking</Text>
+          </View>
 
           {/* Status Badge */}
           <View style={[
@@ -209,6 +248,13 @@ export default function OrderDetailScreen() {
           </View>
 
           <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Payment Method</Text>
+            <Text style={styles.summaryValue}>
+              {order.paymentMethod === "cash" ? "💵 Cash on Delivery" : "💳 Online"}
+            </Text>
+          </View>
+
+          <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Payment Status</Text>
             <Text style={[
               styles.summaryValue,
@@ -217,12 +263,6 @@ export default function OrderDetailScreen() {
               {order.paymentStatus.toUpperCase()}
             </Text>
           </View>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Payment Method</Text>
-          <Text style={styles.summaryValue}>
-            {order.paymentMethod === "cash" ? "💵 Cash on Delivery" : "💳 Online"}
-          </Text>
         </View>
 
         {/* Delivery Address */}
@@ -287,6 +327,23 @@ const styles = StyleSheet.create({
     color: Colors.gray,
     marginTop: 4,
     marginBottom: 12,
+  },
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.success,
+  },
+  liveText: {
+    fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
+    color: Colors.success,
   },
   statusBadge: {
     paddingHorizontal: 16,

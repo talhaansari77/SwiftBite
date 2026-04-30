@@ -36,12 +36,19 @@ interface Restaurant {
   isOpen: boolean
   image: string
 }
+interface Review {
+  _id: string
+  customerName: string
+  rating: number
+  comment: string
+  createdAt: string
+}
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams()
   const { token } = useAuthStore()
   const { items, addItem, removeItem, getTotalItems, getTotalPrice } = useCartStore()
-
+  const [reviews, setReviews] = useState<Review[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,20 +60,23 @@ export default function RestaurantScreen() {
 
   const fetchData = async () => {
     try {
-      const [restRes, menuRes] = await Promise.all([
+      const [restRes, menuRes, reviewRes] = await Promise.all([
         fetch(`${API_URL}/restaurants/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${API_URL}/restaurants/${id}/menu`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        fetch(`${API_URL}/reviews/restaurant/${id}`),
       ])
 
       const restData = await restRes.json()
       const menuData = await menuRes.json()
+      const reviewData = await reviewRes.json()
 
       setRestaurant(restData.restaurant)
       setMenuItems(menuData.menuItems)
+      setReviews(reviewData.reviews || [])
     } catch (error) {
       console.error("Error fetching restaurant:", error)
     } finally {
@@ -99,19 +109,19 @@ export default function RestaurantScreen() {
 
         {/* Header Image */}
         <View style={styles.heroImage}>
-  {restaurant?.image ? (
-    <Image
-      source={{ uri: restaurant.image }}
-      style={styles.heroImageFull}
-      resizeMode="cover"
-    />
-  ) : (
-    <Text style={styles.heroEmoji}>
-      {restaurant?.cuisine === "American" ? "🍔" :
-       restaurant?.cuisine === "Italian" ? "🍕" :
-       restaurant?.cuisine === "Japanese" ? "🍣" : "🍽️"}
-    </Text>
-  )}
+          {restaurant?.image ? (
+            <Image
+              source={{ uri: restaurant.image }}
+              style={styles.heroImageFull}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={styles.heroEmoji}>
+              {restaurant?.cuisine === "American" ? "🍔" :
+                restaurant?.cuisine === "Italian" ? "🍕" :
+                  restaurant?.cuisine === "Japanese" ? "🍣" : "🍽️"}
+            </Text>
+          )}
 
           {/* Back button */}
           <TouchableOpacity
@@ -231,6 +241,41 @@ export default function RestaurantScreen() {
             )
           })}
         </View>
+        {/* Reviews Section */}
+{reviews.length > 0 && (
+  <View style={styles.reviewsSection}>
+    <Text style={styles.reviewsTitle}>
+      Customer Reviews ({reviews.length})
+    </Text>
+    {reviews.map((review) => (
+      <View key={review._id} style={styles.reviewCard}>
+        <View style={styles.reviewHeader}>
+          <View style={styles.reviewAvatar}>
+            <Text style={styles.reviewAvatarText}>
+              {review.customerName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.reviewInfo}>
+            <Text style={styles.reviewName}>{review.customerName}</Text>
+            <Text style={styles.reviewDate}>
+              {new Date(review.createdAt).toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </Text>
+          </View>
+          <View style={styles.reviewRating}>
+            <Text style={styles.reviewRatingText}>⭐ {review.rating}</Text>
+          </View>
+        </View>
+        {review.comment ? (
+          <Text style={styles.reviewComment}>{review.comment}</Text>
+        ) : null}
+      </View>
+    ))}
+  </View>
+)}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -266,9 +311,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   heroImageFull: {
-  width: "100%",
-  height: "100%",
-},
+    width: "100%",
+    height: "100%",
+  },
   heroImage: {
     height: 220,
     backgroundColor: Colors.lightGray,
@@ -493,4 +538,73 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Bold",
     color: Colors.white,
   },
+  reviewsSection: {
+  padding: 16,
+},
+reviewsTitle: {
+  fontSize: 18,
+  fontFamily: "Poppins-Bold",
+  color: Colors.black,
+  marginBottom: 12,
+},
+reviewCard: {
+  backgroundColor: Colors.white,
+  borderRadius: 12,
+  padding: 14,
+  marginBottom: 10,
+  shadowColor: Colors.black,
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.06,
+  shadowRadius: 4,
+  elevation: 2,
+},
+reviewHeader: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+  marginBottom: 8,
+},
+reviewAvatar: {
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  backgroundColor: Colors.primary,
+  justifyContent: "center",
+  alignItems: "center",
+},
+reviewAvatarText: {
+  color: Colors.white,
+  fontFamily: "Poppins-Bold",
+  fontSize: 14,
+},
+reviewInfo: {
+  flex: 1,
+},
+reviewName: {
+  fontSize: 14,
+  fontFamily: "Poppins-SemiBold",
+  color: Colors.black,
+},
+reviewDate: {
+  fontSize: 12,
+  fontFamily: "Poppins-Regular",
+  color: Colors.gray,
+},
+reviewRating: {
+  backgroundColor: Colors.lightGray,
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 20,
+},
+reviewRatingText: {
+  fontSize: 13,
+  fontFamily: "Poppins-Bold",
+  color: Colors.black,
+},
+reviewComment: {
+  fontSize: 13,
+  fontFamily: "Poppins-Regular",
+  color: Colors.gray,
+  lineHeight: 20,
+},
 })

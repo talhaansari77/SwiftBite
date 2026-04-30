@@ -8,6 +8,12 @@ export default function Index() {
   const { isAuthenticated } = useAuthStore()
 
   useEffect(() => {
+    setupApp()
+  }, [])
+
+  const setupApp = async () => {
+    // Request notification permissions
+
     setTimeout(() => {
       if (isAuthenticated) {
         router.replace("/(tabs)/home")
@@ -15,10 +21,15 @@ export default function Index() {
         router.replace("/(auth)/login")
       }
     }, 500)
-  }, [])
+  }
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background }}>
+    <View style={{
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: Colors.background
+    }}>
       <ActivityIndicator size="large" color={Colors.primary} />
     </View>
   )

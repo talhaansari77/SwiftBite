@@ -7,47 +7,45 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native"
 import { useState } from "react"
 import { router } from "expo-router"
-import { useAuthStore } from "@/store/authStore"
+import { ArrowLeft } from "lucide-react-native"
 import { Colors } from "@/constants/colors"
 import { API_URL } from "@/constants"
 
-export default function LoginScreen() {
+export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const { setUser } = useAuthStore()
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError("Please fill in all fields")
+  const handleSendCode = async () => {
+    if (!email) {
+      Alert.alert("Error", "Please enter your email")
       return
     }
 
     setLoading(true)
-    setError("")
-
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       })
 
       const data = await response.json()
 
-      if (!response.ok) {
-        setError(data.message || "Login failed")
-        return
+      if (response.ok) {
+        Alert.alert(
+          "✅ Code Sent!",
+          "Check your email for the reset code.",
+          [{ text: "OK", onPress: () => router.push(`/(auth)/reset-password?email=${email}`) }]
+        )
+      } else {
+        Alert.alert("Error", data.message)
       }
-
-      setUser(data.user, data.token)
-      router.replace("/(tabs)/home")
-    } catch (err) {
-      setError("Something went wrong. Please try again.")
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -60,24 +58,26 @@ export default function LoginScreen() {
     >
       <View style={styles.inner}>
 
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={22} color={Colors.black} />
+        </TouchableOpacity>
+
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.emoji}>🍔</Text>
-          <Text style={styles.title}>SwiftBite</Text>
+          <Text style={styles.emoji}>🔐</Text>
+          <Text style={styles.title}>Forgot Password?</Text>
           <Text style={styles.subtitle}>
-            Delicious food, delivered fast
+            Enter your email and we'll send you a reset code
           </Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
-          {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : null}
-
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>Email Address</Text>
           <TextInput
             style={styles.input}
             placeholder="Enter your email"
@@ -88,40 +88,24 @@ export default function LoginScreen() {
             autoCapitalize="none"
           />
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            placeholderTextColor={Colors.gray}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
           <TouchableOpacity
             style={styles.button}
-            onPress={handleLogin}
+            onPress={handleSendCode}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color={Colors.white} />
             ) : (
-              <Text style={styles.buttonText}>Login</Text>
+              <Text style={styles.buttonText}>Send Reset Code</Text>
             )}
           </TouchableOpacity>
-<TouchableOpacity
-  style={styles.forgotLink}
-  onPress={() => router.push("/(auth)/forgot-password")}
->
-  <Text style={styles.forgotText}>Forgot Password?</Text>
-</TouchableOpacity>
+
           <TouchableOpacity
-            style={styles.registerLink}
-            onPress={() => router.push("/(auth)/register")}
+            style={styles.backLink}
+            onPress={() => router.back()}
           >
-            <Text style={styles.registerText}>
-              Don't have an account?{" "}
-              <Text style={styles.registerBold}>Sign up</Text>
+            <Text style={styles.backLinkText}>
+              Back to <Text style={styles.backLinkBold}>Login</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -138,8 +122,15 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
-    justifyContent: "center",
     paddingHorizontal: 24,
+    paddingTop: 60,
+  },
+  backButton: {
+    backgroundColor: Colors.lightGray,
+    borderRadius: 20,
+    padding: 8,
+    alignSelf: "flex-start",
+    marginBottom: 32,
   },
   header: {
     alignItems: "center",
@@ -147,18 +138,19 @@ const styles = StyleSheet.create({
   },
   emoji: {
     fontSize: 64,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: "Poppins-Bold",
-    color: Colors.primary,
+    color: Colors.black,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
     fontFamily: "Poppins-Regular",
     color: Colors.gray,
+    textAlign: "center",
   },
   form: {
     backgroundColor: Colors.white,
@@ -169,17 +161,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 4,
-  },
-  errorBox: {
-    backgroundColor: "#FFE5E5",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: Colors.error,
-    fontFamily: "Poppins-Regular",
-    fontSize: 13,
   },
   label: {
     fontSize: 14,
@@ -208,26 +189,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Poppins-SemiBold",
   },
-  registerLink: {
+  backLink: {
     alignItems: "center",
     marginTop: 20,
   },
-  registerText: {
+  backLinkText: {
     fontSize: 14,
     fontFamily: "Poppins-Regular",
     color: Colors.gray,
   },
-  registerBold: {
+  backLinkBold: {
     fontFamily: "Poppins-SemiBold",
     color: Colors.primary,
   },
-  forgotLink: {
-  alignItems: "flex-end",
-  marginBottom: 8,
-},
-forgotText: {
-  fontSize: 13,
-  fontFamily: "Poppins-SemiBold",
-  color: Colors.primary,
-},
 })

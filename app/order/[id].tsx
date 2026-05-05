@@ -56,15 +56,15 @@ interface Order {
 
 export default function OrderDetailScreen() {
   const [rating, setRating] = useState(0)
-const [comment, setComment] = useState("")
-const [reviewSubmitted, setReviewSubmitted] = useState(false)
-const [submittingReview, setSubmittingReview] = useState(false)
+  const [comment, setComment] = useState("")
+  const [reviewSubmitted, setReviewSubmitted] = useState(false)
+  const [submittingReview, setSubmittingReview] = useState(false)
   const { id } = useLocalSearchParams()
   const { token } = useAuthStore()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const socketRef = useRef<any>(null)
-  
+
 
   useEffect(() => {
     fetchOrder()
@@ -79,41 +79,41 @@ const [submittingReview, setSubmittingReview] = useState(false)
   }, [])
 
   const handleSubmitReview = async () => {
-  if (rating === 0) {
-    Alert.alert("Rating Required", "Please select a star rating")
-    return
-  }
-
-  setSubmittingReview(true)
-  try {
-    const response = await fetch(`${API_URL}/reviews`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        restaurantId: order?.restaurantId,
-        orderId: order?._id,
-        rating,
-        comment,
-      }),
-    })
-
-    const data = await response.json()
-
-    if (response.ok) {
-      setReviewSubmitted(true)
-      Alert.alert("✅ Thank you!", "Your review has been submitted.")
-    } else {
-      Alert.alert("Error", data.message)
+    if (rating === 0) {
+      Alert.alert("Rating Required", "Please select a star rating")
+      return
     }
-  } catch (error) {
-    Alert.alert("Error", "Something went wrong. Please try again.")
-  } finally {
-    setSubmittingReview(false)
+
+    setSubmittingReview(true)
+    try {
+      const response = await fetch(`${API_URL}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          restaurantId: order?.restaurantId,
+          orderId: order?._id,
+          rating,
+          comment,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setReviewSubmitted(true)
+        Alert.alert("✅ Thank you!", "Your review has been submitted.")
+      } else {
+        Alert.alert("Error", data.message)
+      }
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong. Please try again.")
+    } finally {
+      setSubmittingReview(false)
+    }
   }
-}
 
   const setupSocket = () => {
     // Connect to the backend socket server
@@ -135,7 +135,7 @@ const [submittingReview, setSubmittingReview] = useState(false)
       // Show alert if app is open
       Alert.alert("Order Update 📦", data.message)
 
-      
+
     })
   }
 
@@ -318,58 +318,58 @@ const [submittingReview, setSubmittingReview] = useState(false)
           <Text style={styles.addressText}>📍 {order.address}</Text>
         </View>
         {/* Review Section — only show for delivered orders */}
-{order.status === "delivered" && !reviewSubmitted && (
-  <View style={styles.reviewCard}>
-    <Text style={styles.sectionTitle}>Rate your order ⭐</Text>
+        {order.status === "delivered" && !reviewSubmitted && (
+          <View style={styles.reviewCard}>
+            <Text style={styles.sectionTitle}>Rate your order ⭐</Text>
 
-    {/* Star Rating */}
-    <View style={styles.starsRow}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <TouchableOpacity
-          key={star}
-          onPress={() => setRating(star)}
-        >
-          <Star
-            size={36}
-            color={star <= rating ? "#FFD700" : Colors.lightGray}
-            fill={star <= rating ? "#FFD700" : "transparent"}
-          />
-        </TouchableOpacity>
-      ))}
-    </View>
+            {/* Star Rating */}
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setRating(star)}
+                >
+                  <Star
+                    size={36}
+                    color={star <= rating ? "#FFD700" : Colors.lightGray}
+                    fill={star <= rating ? "#FFD700" : "transparent"}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
 
-    {/* Comment Input */}
-    <TextInput
-      style={styles.commentInput}
-      placeholder="Write a comment (optional)"
-      placeholderTextColor={Colors.gray}
-      value={comment}
-      onChangeText={setComment}
-      multiline
-      numberOfLines={3}
-    />
+            {/* Comment Input */}
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Write a comment (optional)"
+              placeholderTextColor={Colors.gray}
+              value={comment}
+              onChangeText={setComment}
+              multiline
+              numberOfLines={3}
+            />
 
-    {/* Submit Button */}
-    <TouchableOpacity
-      style={styles.reviewButton}
-      onPress={handleSubmitReview}
-      disabled={submittingReview}
-    >
-      {submittingReview ? (
-        <ActivityIndicator color={Colors.white} />
-      ) : (
-        <Text style={styles.reviewButtonText}>Submit Review</Text>
-      )}
-    </TouchableOpacity>
-  </View>
-)}
+            {/* Submit Button */}
+            <TouchableOpacity
+              style={styles.reviewButton}
+              onPress={handleSubmitReview}
+              disabled={submittingReview}
+            >
+              {submittingReview ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.reviewButtonText}>Submit Review</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
-{/* Already reviewed */}
-{reviewSubmitted && (
-  <View style={styles.reviewCard}>
-    <Text style={styles.reviewedText}>✅ Thank you for your review!</Text>
-  </View>
-)}
+        {/* Already reviewed */}
+        {reviewSubmitted && (
+          <View style={styles.reviewCard}>
+            <Text style={styles.reviewedText}>✅ Thank you for your review!</Text>
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  
+
   loader: {
     flex: 1,
     justifyContent: "center",
@@ -579,42 +579,42 @@ const styles = StyleSheet.create({
     color: Colors.gray,
   },
   reviewCard: {
-  backgroundColor: Colors.white,
-  padding: 20,
-  marginBottom: 8,
-},
-starsRow: {
-  flexDirection: "row",
-  gap: 8,
-  marginBottom: 16,
-  justifyContent: "center",
-},
-commentInput: {
-  backgroundColor: Colors.lightGray,
-  borderRadius: 12,
-  padding: 14,
-  fontSize: 14,
-  fontFamily: "Poppins-Regular",
-  color: Colors.black,
-  marginBottom: 16,
-  minHeight: 80,
-  textAlignVertical: "top",
-},
-reviewButton: {
-  backgroundColor: Colors.primary,
-  borderRadius: 12,
-  padding: 14,
-  alignItems: "center",
-},
-reviewButtonText: {
-  color: Colors.white,
-  fontFamily: "Poppins-SemiBold",
-  fontSize: 15,
-},
-reviewedText: {
-  fontSize: 15,
-  fontFamily: "Poppins-SemiBold",
-  color: Colors.success,
-  textAlign: "center",
-},
+    backgroundColor: Colors.white,
+    padding: 20,
+    marginBottom: 8,
+  },
+  starsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+    justifyContent: "center",
+  },
+  commentInput: {
+    backgroundColor: Colors.lightGray,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+    color: Colors.black,
+    marginBottom: 16,
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  reviewButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: "center",
+  },
+  reviewButtonText: {
+    color: Colors.white,
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 15,
+  },
+  reviewedText: {
+    fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
+    color: Colors.success,
+    textAlign: "center",
+  },
 })

@@ -1,33 +1,39 @@
-import { API_URL } from "@/constants"
-import { Colors } from "@/constants/colors"
-import { useAuthStore } from "@/store/authStore"
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from "react-native"
+import { useState } from "react"
 import { router } from "expo-router"
 import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  LogOut,
   ChevronRight,
   Edit3,
-  LogOut,
-  Mail,
-  MapPin,
-  Phone,
-  User,
+  Save,
 } from "lucide-react-native"
-import { useState } from "react"
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native"
+import { Colors } from "@/constants/colors"
+import { useAuthStore } from "@/store/authStore"
+import { API_URL } from "@/constants"
 
 export default function ProfileScreen() {
   const { user, logout, setUser, token } = useAuthStore()
+
   const [editing, setEditing] = useState(false)
-  const [address, setAddress] = useState(user?.address || "")
   const [loading, setLoading] = useState(false)
+
+  // Editable fields
+  const [name, setName] = useState(user?.name || "")
+  const [phone, setPhone] = useState(user?.phone || "")
+  const [address, setAddress] = useState(user?.address || "")
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -43,44 +49,47 @@ export default function ProfileScreen() {
     ])
   }
 
-  const handleSaveAddress = async () => {
-  console.log(address)
-    if (!address.trim()) {
-      Alert.alert("Error", "Please enter a valid address")
+  const handleSaveProfile = async () => {
+    if (!name.trim()) {
+      Alert.alert("Error", "Name cannot be empty")
       return
     }
 
     setLoading(true)
     try {
-      const response = await fetch(
-        `${API_URL}/auth/update-profile`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ address }),
-        }
-      )
+      const response = await fetch(`${API_URL}/auth/update-profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name, phone, address }),
+      })
 
       const data = await response.json()
 
       if (response.ok) {
-        setUser({ ...user!, address }, token!)
+        setUser({ ...user!, name, phone, address }, token!)
         setEditing(false)
-        Alert.alert("✅ Success", "Address updated successfully")
+        Alert.alert("✅ Success", "Profile updated successfully")
       } else {
         Alert.alert("Error", data.message)
       }
     } catch (error) {
-      // Save locally even if API fails
-      setUser({ ...user!, address }, token!)
+      setUser({ ...user!, name, phone, address }, token!)
       setEditing(false)
-      Alert.alert("✅ Saved", "Address saved locally")
+      Alert.alert("✅ Saved", "Profile saved locally")
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCancelEdit = () => {
+    // Reset to original values
+    setName(user?.name || "")
+    setPhone(user?.phone || "")
+    setAddress(user?.address || "")
+    setEditing(false)
   }
 
   return (
@@ -89,6 +98,14 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => editing ? handleCancelEdit() : setEditing(true)}
+        >
+          <Text style={styles.editButtonText}>
+            {editing ? "Cancel" : "Edit"}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -97,10 +114,20 @@ export default function ProfileScreen() {
         <View style={styles.avatarSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {user?.name?.charAt(0).toUpperCase()}
+              {name.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.userName}>{user?.name}</Text>
+          {editing ? (
+            <TextInput
+              style={styles.nameInput}
+              value={name}
+              onChangeText={setName}
+              placeholder="Your name"
+              placeholderTextColor={Colors.gray}
+            />
+          ) : (
+            <Text style={styles.userName}>{user?.name}</Text>
+          )}
           <Text style={styles.userRole}>{user?.role}</Text>
         </View>
 
@@ -109,18 +136,8 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Account Info</Text>
 
           <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
-                <User size={18} color={Colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Full Name</Text>
-                <Text style={styles.infoValue}>{user?.name}</Text>
-              </View>
-            </View>
 
-            <View style={styles.divider} />
-
+            {/* Email - not editable */}
             <View style={styles.infoRow}>
               <View style={styles.infoIcon}>
                 <Mail size={18} color={Colors.primary} />
@@ -133,67 +150,78 @@ export default function ProfileScreen() {
 
             <View style={styles.divider} />
 
+            {/* Phone - editable */}
             <View style={styles.infoRow}>
               <View style={styles.infoIcon}>
                 <Phone size={18} color={Colors.primary} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Phone</Text>
-                <Text style={styles.infoValue}>{user?.phone || "Not set"}</Text>
+                {editing ? (
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="Enter phone number"
+                    placeholderTextColor={Colors.gray}
+                    keyboardType="phone-pad"
+                  />
+                ) : (
+                  <Text style={styles.infoValue}>
+                    {user?.phone || "Not set"}
+                  </Text>
+                )}
               </View>
             </View>
-          </View>
-        </View>
 
-        {/* Delivery Address */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Delivery Address</Text>
-            <TouchableOpacity onPress={() => setEditing(!editing)}>
-              <Edit3 size={18} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
+            <View style={styles.divider} />
 
-          <View style={styles.infoCard}>
+            {/* Address - editable */}
             <View style={styles.infoRow}>
               <View style={styles.infoIcon}>
                 <MapPin size={18} color={Colors.primary} />
               </View>
               <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Delivery Address</Text>
                 {editing ? (
-                  <>
-                    <TextInput
-                      style={styles.addressInput}
-                      value={address}
-                      onChangeText={setAddress}
-                      placeholder="Enter your delivery address"
-                      placeholderTextColor={Colors.gray}
-                      multiline
-                    />
-                    <TouchableOpacity
-                      style={styles.saveButton}
-                      onPress={handleSaveAddress}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <ActivityIndicator color={Colors.white} size="small" />
-                      ) : (
-                        <Text style={styles.saveButtonText}>Save Address</Text>
-                      )}
-                    </TouchableOpacity>
-                  </>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={address}
+                    onChangeText={setAddress}
+                    placeholder="Enter delivery address"
+                    placeholderTextColor={Colors.gray}
+                    multiline
+                  />
                 ) : (
-                  <>
-                    <Text style={styles.infoLabel}>Address</Text>
-                    <Text style={styles.infoValue}>
-                      {user?.address || "Tap edit to add address"}
-                    </Text>
-                  </>
+                  <Text style={styles.infoValue}>
+                    {user?.address || "Not set"}
+                  </Text>
                 )}
               </View>
             </View>
+
           </View>
         </View>
+
+        {/* Save Button */}
+        {editing && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveProfile}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <>
+                  <Save size={18} color={Colors.white} />
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Quick Links */}
         <View style={styles.section}>
@@ -232,6 +260,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 16,
@@ -240,6 +271,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontFamily: "Poppins-Bold",
+    color: Colors.black,
+  },
+  editButton: {
+    backgroundColor: Colors.lightGray,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  editButtonText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 14,
     color: Colors.black,
   },
   avatarSection: {
@@ -262,6 +304,16 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Bold",
     color: Colors.white,
   },
+  nameInput: {
+    fontSize: 20,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.primary,
+    paddingBottom: 4,
+    textAlign: "center",
+    minWidth: 200,
+  },
   userName: {
     fontSize: 20,
     fontFamily: "Poppins-Bold",
@@ -277,12 +329,6 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 16,
     marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 15,
@@ -327,34 +373,33 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginTop: 2,
   },
+  fieldInput: {
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+    color: Colors.black,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.primary,
+    paddingBottom: 4,
+    marginTop: 4,
+  },
   divider: {
     height: 1,
     backgroundColor: Colors.border,
     marginVertical: 12,
   },
-  addressInput: {
-    fontSize: 14,
-    fontFamily: "Poppins-Regular",
-    color: Colors.black,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 4,
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
   saveButton: {
     backgroundColor: Colors.primary,
-    borderRadius: 8,
-    padding: 10,
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
+    justifyContent: "center",
+    gap: 8,
   },
   saveButtonText: {
     color: Colors.white,
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 14,
+    fontSize: 16,
+    fontFamily: "Poppins-Bold",
   },
   linkRow: {
     flexDirection: "row",

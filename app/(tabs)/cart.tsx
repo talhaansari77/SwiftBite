@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     Alert,
     ActivityIndicator,
+    TextInput,
 } from "react-native"
 import { useState } from "react"
 import { router } from "expo-router"
@@ -21,9 +22,64 @@ export default function CartScreen() {
     const address = user?.address || ""
     const [loading, setLoading] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash")
+    const [promoCode, setPromoCode] = useState("")
+    const [promoApplied, setPromoApplied] = useState(false)
+    const [promoDiscount, setPromoDiscount] = useState(0)
+    const [promoLoading, setPromoLoading] = useState(false)
+    const [promoError, setPromoError] = useState("")
+
 
     const deliveryFee = 2.5
-    const total = getTotalPrice() + deliveryFee
+    const subtotal = getTotalPrice()
+    const total = subtotal + deliveryFee - promoDiscount
+
+
+    const handleApplyPromo = async () => {
+        if (!promoCode.trim()) {
+            setPromoError("Please enter a promo code")
+            return
+        }
+
+        setPromoLoading(true)
+        setPromoError("")
+
+        try {
+            const response = await fetch(`${API_URL}/promo/validate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    code: promoCode,
+                    orderTotal: getTotalPrice(),
+                }),
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                setPromoApplied(true)
+                setPromoDiscount(data.promo.discountAmount)
+                setPromoError("")
+            } else {
+                setPromoError(data.message)
+                setPromoApplied(false)
+                setPromoDiscount(0)
+            }
+        } catch (error) {
+            setPromoError("Something went wrong. Please try again.")
+        } finally {
+            setPromoLoading(false)
+        }
+    }
+
+    const handleRemovePromo = () => {
+        setPromoCode("")
+        setPromoApplied(false)
+        setPromoDiscount(0)
+        setPromoError("")
+    }
 
     const handlePlaceOrder = async () => {
 
@@ -71,6 +127,8 @@ export default function CartScreen() {
                     items: orderItems,
                     address,
                     paymentMethod,
+                    promoCode: promoApplied ? promoCode : null,
+                    discount: promoDiscount,
                 }),
             })
 
@@ -86,6 +144,17 @@ export default function CartScreen() {
             Alert.alert("🎉 Order Placed!", "Your order has been placed successfully.", [
                 { text: "OK", onPress: () => router.replace("/(tabs)/orders") }
             ])
+            // Apply promo code usage
+            if (promoApplied) {
+                await fetch(`${API_URL}/promo/apply`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ code: promoCode }),
+                })
+            }
         } catch (error: any) {
             console.error("Order error:", error)
             Alert.alert("Error", "Something went wrong. Please try again.")
@@ -171,13 +240,24 @@ export default function CartScreen() {
 
                     <View style={styles.summaryRow}>
                         <Text style={styles.summaryLabel}>Subtotal</Text>
-                        <Text style={styles.summaryValue}>${getTotalPrice().toFixed(2)}</Text>
+                        <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
                     </View>
 
                     <View style={styles.summaryRow}>
                         <Text style={styles.summaryLabel}>Delivery Fee</Text>
                         <Text style={styles.summaryValue}>${deliveryFee.toFixed(2)}</Text>
                     </View>
+
+                    {promoApplied && (
+                        <View style={styles.summaryRow}>
+                            <Text style={[styles.summaryLabel, { color: Colors.success }]}>
+                                Promo Discount
+                            </Text>
+                            <Text style={[styles.summaryValue, { color: Colors.success }]}>
+                                -${promoDiscount.toFixed(2)}
+                            </Text>
+                        </View>
+                    )}
 
                     <View style={styles.divider} />
 
@@ -244,6 +324,55 @@ export default function CartScreen() {
                             )}
                         </View>
                     </TouchableOpacity>
+                </View>
+
+                {/* Promo Code */}
+                <View style={styles.promoCard}>
+                    <Text style={styles.promoTitle}>🎟️ Promo Code</Text>
+
+                    {!promoApplied ? (
+                        <>
+                            <View style={styles.promoInputRow}>
+                                <TextInput
+                                    style={styles.promoInput}
+                                    placeholder="Enter promo code"
+                                    placeholderTextColor={Colors.gray}
+                                    value={promoCode}
+                                    onChangeText={(text) => {
+                                        setPromoCode(text.toUpperCase())
+                                        setPromoError("")
+                                    }}
+                                    autoCapitalize="characters"
+                                />
+                                <TouchableOpacity
+                                    style={styles.promoButton}
+                                    onPress={handleApplyPromo}
+                                    disabled={promoLoading}
+                                >
+                                    {promoLoading ? (
+                                        <ActivityIndicator color={Colors.white} size="small" />
+                                    ) : (
+                                        <Text style={styles.promoButtonText}>Apply</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                            {promoError ? (
+                                <Text style={styles.promoError}>{promoError}</Text>
+                            ) : null}
+                        </>
+                    ) : (
+                        <View style={styles.promoApplied}>
+                            <View style={styles.promoAppliedLeft}>
+                                <Text style={styles.promoAppliedCode}>✅ {promoCode}</Text>
+                                <Text style={styles.promoAppliedSaving}>
+                                    You save ${promoDiscount.toFixed(2)}!
+                                </Text>
+                            </View>
+                            <TouchableOpacity onPress={handleRemovePromo}>
+                                <Text style={styles.promoRemove}>Remove</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
 
                 <View style={{ height: 100 }} />
@@ -522,5 +651,74 @@ const styles = StyleSheet.create({
         height: 10,
         borderRadius: 5,
         backgroundColor: Colors.primary,
+    },
+    promoCard: {
+        backgroundColor: Colors.white,
+        marginTop: 8,
+        padding: 20,
+    },
+    promoTitle: {
+        fontSize: 14,
+        fontFamily: "Poppins-SemiBold",
+        color: Colors.black,
+        marginBottom: 12,
+    },
+    promoInputRow: {
+        flexDirection: "row",
+        gap: 10,
+    },
+    promoInput: {
+        flex: 1,
+        backgroundColor: Colors.lightGray,
+        borderRadius: 10,
+        padding: 12,
+        fontSize: 14,
+        fontFamily: "Poppins-Regular",
+        color: Colors.black,
+        letterSpacing: 2,
+    },
+    promoButton: {
+        backgroundColor: Colors.primary,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    promoButtonText: {
+        color: Colors.white,
+        fontFamily: "Poppins-SemiBold",
+        fontSize: 14,
+    },
+    promoError: {
+        color: Colors.error,
+        fontFamily: "Poppins-Regular",
+        fontSize: 12,
+        marginTop: 6,
+    },
+    promoApplied: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "#E8F5E9",
+        borderRadius: 10,
+        padding: 12,
+    },
+    promoAppliedLeft: {
+        gap: 2,
+    },
+    promoAppliedCode: {
+        fontSize: 14,
+        fontFamily: "Poppins-Bold",
+        color: Colors.success,
+    },
+    promoAppliedSaving: {
+        fontSize: 12,
+        fontFamily: "Poppins-Regular",
+        color: Colors.success,
+    },
+    promoRemove: {
+        fontSize: 13,
+        fontFamily: "Poppins-SemiBold",
+        color: Colors.error,
     },
 })

@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router"
-import { ClipboardList, UtensilsCrossed, User } from "lucide-react-native"
+import { ClipboardList, UtensilsCrossed, BarChart2, User } from "lucide-react-native"
 import { Colors } from "@/constants/colors"
 
 export default function OwnerLayout() {
@@ -37,6 +37,15 @@ export default function OwnerLayout() {
           title: "Menu",
           tabBarIcon: ({ color, size }) => (
             <UtensilsCrossed color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          title: "Analytics",
+          tabBarIcon: ({ color, size }) => (
+            <BarChart2 color={color} size={size} />
           ),
         }}
       />

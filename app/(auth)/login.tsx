@@ -45,7 +45,12 @@ export default function LoginScreen() {
       }
 
       setUser(data.user, data.token)
-      router.replace("/(tabs)/home")
+      // Route based on role
+      if (data.user.role === "restaurant") {
+        router.replace("/(owner)/dashboard")
+      } else {
+        router.replace("/(tabs)/home")
+      }
     } catch (err) {
       setError("Something went wrong. Please try again.")
     } finally {
@@ -109,12 +114,12 @@ export default function LoginScreen() {
               <Text style={styles.buttonText}>Login</Text>
             )}
           </TouchableOpacity>
-<TouchableOpacity
-  style={styles.forgotLink}
-  onPress={() => router.push("/(auth)/forgot-password")}
->
-  <Text style={styles.forgotText}>Forgot Password?</Text>
-</TouchableOpacity>
+          <TouchableOpacity
+            style={styles.forgotLink}
+            onPress={() => router.push("/(auth)/forgot-password")}
+          >
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.registerLink}
             onPress={() => router.push("/(auth)/register")}
@@ -222,12 +227,12 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   forgotLink: {
-  alignItems: "flex-end",
-  marginBottom: 8,
-},
-forgotText: {
-  fontSize: 13,
-  fontFamily: "Poppins-SemiBold",
-  color: Colors.primary,
-},
+    alignItems: "flex-end",
+    marginBottom: 8,
+  },
+  forgotText: {
+    fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
+    color: Colors.primary,
+  },
 })

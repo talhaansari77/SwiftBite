@@ -16,6 +16,8 @@ import { io } from "socket.io-client"
 import { Colors } from "@/constants/colors"
 import { useAuthStore } from "@/store/authStore"
 import { API_URL } from "@/constants"
+import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps"
+
 
 const STATUS_STEPS = [
   { key: "pending", label: "Order Placed", emoji: "📋" },
@@ -64,7 +66,40 @@ export default function OrderDetailScreen() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const socketRef = useRef<any>(null)
+  const [region, setRegion] = useState({
+    latitude: 29.3759,
+    longitude: 47.9774,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  })
 
+  const [driverLocation, setDriverLocation] = useState({
+    latitude: 29.3759 + 0.01,
+    longitude: 47.9774 + 0.01,
+  })
+  useEffect(() => {
+  if (order?.status === "on_the_way") {
+    const targetLat = region.latitude
+    const targetLng = region.longitude
+
+    const interval = setInterval(() => {
+      setDriverLocation((prev) => {
+        const newLat = prev.latitude - 0.0005
+        const newLng = prev.longitude - 0.0005
+
+        // Stop when driver reaches customer
+        if (newLat <= targetLat && newLng <= targetLng) {
+          clearInterval(interval)
+          return { latitude: targetLat, longitude: targetLng }
+        }
+
+        return { latitude: newLat, longitude: newLng }
+      })
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }
+}, [order?.status])
 
   useEffect(() => {
     fetchOrder()
@@ -215,6 +250,55 @@ export default function OrderDetailScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Map Section */}
+        {order.status !== "delivered" && order.status !== "cancelled" && (
+          <View style={styles.mapCard}>
+            <Text style={styles.mapTitle}>📍 Live Tracking</Text>
+            <MapView
+              style={styles.map}
+              provider={PROVIDER_DEFAULT}
+              initialRegion={region}
+              scrollEnabled={false}
+            >
+              {/* Restaurant Marker */}
+              {/* Driver/Restaurant Marker */}
+              <Marker
+                coordinate={
+                  order.status === "on_the_way"
+                    ? driverLocation
+                    : {
+                      latitude: region.latitude + 0.01,
+                      longitude: region.longitude + 0.01,
+                    }
+                }
+                title={order.status === "on_the_way" ? "Driver" : "Restaurant"}
+                description={
+                  order.status === "on_the_way"
+                    ? "Your driver is on the way!"
+                    : "Your order is here"
+                }
+                pinColor={Colors.primary}
+              />
+
+              {/* Customer Marker */}
+              <Marker
+                coordinate={{
+                  latitude: region.latitude,
+                  longitude: region.longitude,
+                }}
+                title="Delivery Location"
+                description="Your location"
+                pinColor={Colors.secondary}
+              />
+            </MapView>
+            <Text style={styles.mapNote}>
+              {order.status === "on_the_way"
+                ? "🛵 Driver is on the way!"
+                : "👨‍🍳 Order is being prepared"}
+            </Text>
+          </View>
+        )}
 
         {/* Progress Tracker */}
         {order.status !== "cancelled" && (
@@ -616,5 +700,29 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-SemiBold",
     color: Colors.success,
     textAlign: "center",
+  },
+  mapCard: {
+    backgroundColor: Colors.white,
+    marginBottom: 8,
+    padding: 16,
+  },
+  mapTitle: {
+    fontSize: 16,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+    marginBottom: 12,
+  },
+  map: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  mapNote: {
+    fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
+    color: Colors.gray,
+    textAlign: "center",
+    marginTop: 10,
   },
 })

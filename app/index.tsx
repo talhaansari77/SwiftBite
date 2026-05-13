@@ -5,23 +5,22 @@ import { View, ActivityIndicator } from "react-native"
 import { Colors } from "@/constants/colors"
 
 export default function Index() {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
 
   useEffect(() => {
-    setupApp()
-  }, [])
-
-  const setupApp = async () => {
-    // Request notification permissions
-
     setTimeout(() => {
       if (isAuthenticated) {
-        router.replace("/(tabs)/home")
+        // Route based on role
+        if (user?.role === "restaurant") {
+          router.replace("/(owner)/dashboard")
+        } else {
+          router.replace("/(tabs)/home")
+        }
       } else {
         router.replace("/(auth)/login")
       }
     }, 500)
-  }
+  }, [])
 
   return (
     <View style={{

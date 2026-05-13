@@ -20,36 +20,47 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false)
 
   const handleSendCode = async () => {
-    if (!email) {
-      Alert.alert("Error", "Please enter your email")
-      return
-    }
-
-    setLoading(true)
-    try {
-      const response = await fetch(`${API_URL}/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        Alert.alert(
-          "✅ Code Sent!",
-          "Check your email for the reset code.",
-          [{ text: "OK", onPress: () => router.push(`/(auth)/reset-password?email=${email}`) }]
-        )
-      } else {
-        Alert.alert("Error", data.message)
-      }
-    } catch (error) {
-      Alert.alert("Error", "Something went wrong. Please try again.")
-    } finally {
-      setLoading(false)
-    }
+  if (!email) {
+    Alert.alert("Error", "Please enter your email")
+    return
   }
+
+  setLoading(true)
+  try {
+    // Add timeout to prevent infinite loading
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 seconds
+
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    const data = await response.json()
+
+    if (response.ok) {
+      Alert.alert(
+        "✅ Code Sent!",
+        "Check your email for the reset code.",
+        [{ text: "OK", onPress: () => router.push(`/(auth)/reset-password?email=${email}`) }]
+      )
+    } else {
+      Alert.alert("Error", data.message)
+    }
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      Alert.alert("Timeout", "Request took too long. Please try again.")
+    } else {
+      Alert.alert("Error", "Something went wrong. Please try again.")
+    }
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <KeyboardAvoidingView

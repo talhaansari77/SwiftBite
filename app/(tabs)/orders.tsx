@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native"
 import { useState, useEffect, useCallback } from "react"
 import { router, useFocusEffect } from "expo-router"
@@ -13,6 +14,8 @@ import { ShoppingBag } from "lucide-react-native"
 import { Colors } from "@/constants/colors"
 import { useAuthStore } from "@/store/authStore"
 import { API_URL } from "@/constants"
+import { useCartStore } from "@/store/cartStore"
+
 
 interface OrderItem {
   menuItemId: string
@@ -56,6 +59,7 @@ export default function OrdersScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const { token } = useAuthStore()
+  const { addItem, clearCart } = useCartStore()
 
   const fetchOrders = async () => {
     try {
@@ -70,6 +74,43 @@ export default function OrdersScreen() {
       setLoading(false)
       setRefreshing(false)
     }
+  }
+
+  const handleReorder = (order: Order) => {
+    Alert.alert(
+      "Reorder",
+      "This will clear your current cart. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reorder",
+          onPress: () => {
+            // Clear existing cart
+            clearCart()
+
+            // Add all items from previous order
+            order.items.forEach((item) => {
+              addItem(
+                {
+                  _id: item.menuItemId,
+                  name: item.name,
+                  price: item.price,
+                  description: "",
+                  image: "",
+                  category: "",
+                  restaurantId: order.restaurantId,
+                  isAvailable: true,
+                },
+                order.restaurantId
+              )
+            })
+
+            // Go to cart
+            router.push("/(tabs)/cart")
+          },
+        },
+      ]
+    )
   }
 
   // Refetch every time the screen comes into focus
@@ -118,57 +159,73 @@ export default function OrdersScreen() {
           <View style={styles.ordersList}>
             {orders.map((order) => (
               <TouchableOpacity
-                key={order._id}
-                style={styles.orderCard}
-                onPress={() => router.push(`/order/${order._id}`)}
-              >
+  key={order._id}
+  style={styles.orderCard}
+  onPress={() => router.push(`/order/${order._id}`)}
+>
+  {/* Order Header */}
+  <View style={styles.orderHeader}>
+    <View>
+      <Text style={styles.orderId}>
+        Order #{order._id.slice(-6).toUpperCase()}
+      </Text>
+      <Text style={styles.orderDate}>
+        {new Date(order.createdAt).toLocaleDateString("en-US", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </Text>
+    </View>
+    <View style={[
+      styles.statusBadge,
+      { backgroundColor: STATUS_COLORS[order.status] || Colors.gray }
+    ]}>
+      <Text style={styles.statusText}>
+        {STATUS_LABELS[order.status] || order.status}
+      </Text>
+    </View>
+  </View>
 
-                {/* Order Header */}
-                <View style={styles.orderHeader}>
-                  <Text style={styles.orderId}>
-                    Order #{order._id.slice(-6).toUpperCase()}
-                  </Text>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: STATUS_COLORS[order.status] || Colors.gray }
-                  ]}>
-                    <Text style={styles.statusText}>
-                      {STATUS_LABELS[order.status] || order.status}
-                    </Text>
-                  </View>
-                </View>
+  {/* Divider */}
+  <View style={styles.divider} />
 
-                {/* Order Items */}
-                <View style={styles.orderItems}>
-                  {order.items.map((item, index) => (
-                    <Text key={index} style={styles.orderItem}>
-                      {item.quantity}x {item.name}
-                    </Text>
-                  ))}
-                </View>
+  {/* Order Items */}
+  <View style={styles.orderItems}>
+    {order.items.map((item, index) => (
+      <Text key={index} style={styles.orderItem}>
+        {item.quantity}x {item.name}
+      </Text>
+    ))}
+  </View>
 
-                {/* Order Footer */}
-                <View style={styles.orderFooter}>
-                  <View>
-                    <Text style={styles.orderDate}>
-                      {new Date(order.createdAt).toLocaleDateString("en-US", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Text>
-                    <Text style={styles.orderAddress} numberOfLines={1}>
-                      📍 {order.address}
-                    </Text>
-                  </View>
-                  <Text style={styles.orderTotal}>
-                    ${(order.totalAmount + order.deliveryFee).toFixed(2)}
-                  </Text>
-                </View>
+  {/* Divider */}
+  <View style={styles.divider} />
 
-              </TouchableOpacity>
+  {/* Order Footer */}
+  <View style={styles.orderFooter}>
+    <View style={styles.orderFooterLeft}>
+      <Text style={styles.orderAddress} numberOfLines={1}>
+        📍 {order.address}
+      </Text>
+      <Text style={styles.orderTotal}>
+        ${(order.totalAmount + order.deliveryFee).toFixed(2)}
+      </Text>
+    </View>
+    <TouchableOpacity
+      style={styles.reorderButton}
+      onPress={(e) => {
+        e.stopPropagation()
+        handleReorder(order)
+      }}
+    >
+      <Text style={styles.reorderButtonText}>🔄 Reorder</Text>
+    </TouchableOpacity>
+  </View>
+
+</TouchableOpacity>
             ))}
           </View>
           <View style={{ height: 20 }} />
@@ -193,6 +250,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 16,
     backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontSize: 22,
@@ -235,13 +294,19 @@ const styles = StyleSheet.create({
   orderHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   orderId: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "Poppins-Bold",
     color: Colors.black,
+  },
+  orderDate: {
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
+    color: Colors.gray,
+    marginTop: 2,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -253,13 +318,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Poppins-SemiBold",
   },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 10,
+  },
   orderItems: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    paddingVertical: 10,
-    marginBottom: 12,
     gap: 4,
   },
   orderItem: {
@@ -270,23 +334,32 @@ const styles = StyleSheet.create({
   orderFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
+    alignItems: "center",
   },
-  orderDate: {
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
-    color: Colors.gray,
+  orderFooterLeft: {
+    flex: 1,
+    gap: 4,
+    marginRight: 12,
   },
   orderAddress: {
     fontSize: 12,
     fontFamily: "Poppins-Regular",
     color: Colors.gray,
-    marginTop: 2,
-    maxWidth: 220,
   },
   orderTotal: {
     fontSize: 18,
     fontFamily: "Poppins-Bold",
     color: Colors.primary,
+  },
+  reorderButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  reorderButtonText: {
+    color: Colors.white,
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 13,
   },
 })

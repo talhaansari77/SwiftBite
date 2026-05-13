@@ -1,50 +1,93 @@
-# Welcome to your Expo app 👋
+# SwiftBite 🍔
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A full-stack food delivery mobile app built with React Native and Expo.
 
-## Get started
+## 📱 Screenshots
 
-1. Install dependencies
+> Add screenshots here after building APK
 
-   ```bash
-   npm install
-   ```
+## 🚀 Features
 
-2. Start the app
+### Customer
+- 🔐 Login & Register with JWT authentication
+- 🏠 Browse restaurants with category filters & search
+- 🍽️ View restaurant menus with category tabs
+- 🛒 Add items to cart with quantity control
+- 🎟️ Apply promo codes & discounts
+- 💵 Cash on Delivery payment
+- 📍 Real-time order tracking with Socket.io
+- 🗺️ Driver location tracking on map
+- ⭐ Rate & review restaurants
+- 📦 Order history with reorder feature
+- 👤 Edit profile (name, phone, address)
+- 🔑 Forgot password & reset via email
 
-   ```bash
-   npx expo start
-   ```
+### Restaurant Owner
+- 📊 Analytics dashboard (revenue, orders, popular items)
+- 🔥 Real-time incoming orders
+- ✅ Update order status in real-time
+- 🍽️ Menu management (add, toggle, delete items)
 
-In the output, you'll find options to open the app in a
+## 🛠️ Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Technology | Purpose |
+|---|---|
+| React Native | Mobile framework |
+| Expo SDK 53 | Development platform |
+| Expo Router | File-based navigation |
+| TypeScript | Type safety |
+| Zustand | State management |
+| Socket.io Client | Real-time updates |
+| React Native Maps | Map & location |
+| Axios | API calls |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 📁 Project Structure
 
-## Get a fresh project
+SwiftBite/
+├── app/
+│   ├── (auth)/          # Login, Register, Forgot Password
+│   ├── (tabs)/          # Customer screens
+│   ├── (owner)/         # Restaurant owner screens
+│   ├── restaurant/      # Restaurant detail
+│   └── order/           # Order detail
+├── constants/           # Colors, API URL
+├── store/               # Zustand stores
+├── services/            # Notification service
+└── types/               # TypeScript types
 
-When you're ready, run:
 
+## 🔧 Setup & Installation
+
+1. Clone the repo:
 ```bash
-npm run reset-project
+git clone https://github.com/talhaansari77/SwiftBite-frontend.git
+cd SwiftBite-frontend
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Install dependencies:
+```bash
+npm install
+```
 
-## Learn more
+3. Start the app:
+```bash
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+4. Scan QR code with Expo Go app
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 🌐 Backend
 
-## Join the community
+The backend is deployed at:
+https://swiftbite-backend-1ioe.onrender.com
 
-Join our community of developers creating universal apps.
+Backend repo: [SwiftBite Backend](https://github.com/talhaansari77/SwiftBite-backend)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 👨‍💻 Author
+
+**Talha Ansari**
+- GitHub: [@talhaansari77](https://github.com/talhaansari77)
+
+## 📄 License
+
+MIT License

@@ -28,6 +28,9 @@ export default function RootLayout() {
         <Stack.Screen name="(owner)" />
         <Stack.Screen name="restaurant/[id]" />
         <Stack.Screen name="order/[id]" />
+        <Stack.Screen name="addresses" />
+        <Stack.Screen name="favourites" />
+        <Stack.Screen name="wallet" />
       </Stack>
     </>
   )

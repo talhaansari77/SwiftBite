@@ -1,11 +1,21 @@
+export interface IAddress {
+  _id?: string
+  label: string
+  address: string
+  isDefault: boolean
+}
+
 export interface User {
   _id: string
   name: string
   email: string
   phone: string
-  address: string
+  addresses: IAddress[]
   avatar?: string
-  role: "customer" | "restaurant" | "driver"
+  role: string
+  favourites: string[]
+  walletBalance: number
+  foodiePoints: number
 }
 
 export interface Restaurant {
@@ -47,6 +57,7 @@ export interface Order {
   deliveryFee: number
   status: "pending" | "confirmed" | "preparing" | "on_the_way" | "delivered" | "cancelled"
   address: string
+  paymentMethod: string
   paymentStatus: "pending" | "paid" | "failed"
   createdAt: string
 }

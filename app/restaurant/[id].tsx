@@ -9,7 +9,7 @@ import {
 } from "react-native"
 import { useState, useEffect } from "react"
 import { router, useLocalSearchParams } from "expo-router"
-import { ArrowLeft, ShoppingCart, Plus, Minus } from "lucide-react-native"
+import { ArrowLeft, ShoppingCart, Plus, Minus, Heart } from "lucide-react-native"
 import { Colors } from "@/constants/colors"
 import { useAuthStore } from "@/store/authStore"
 import { useCartStore } from "@/store/cartStore"
@@ -46,17 +46,39 @@ interface Review {
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams()
-  const { token } = useAuthStore()
+  const { token, user, updateUser } = useAuthStore()
   const { items, addItem, removeItem, getTotalItems, getTotalPrice } = useCartStore()
   const [reviews, setReviews] = useState<Review[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const [isFavourite, setIsFavourite] = useState(
+    user?.favourites?.includes(id as string) || false
+  )
 
   useEffect(() => {
     fetchData()
   }, [])
+
+  const handleToggleFavourite = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/auth/favourites/${id}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      const data = await response.json()
+      if (response.ok) {
+        setIsFavourite(data.isFavourite)
+        updateUser({ favourites: data.favourites })
+      }
+    } catch (error) {
+      console.error("Error toggling favourite:", error)
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -129,6 +151,17 @@ export default function RestaurantScreen() {
             onPress={() => router.back()}
           >
             <ArrowLeft size={22} color={Colors.black} />
+          </TouchableOpacity>
+          {/* heartButton */}
+          <TouchableOpacity
+            style={styles.heartButton}
+            onPress={handleToggleFavourite}
+          >
+            <Heart
+              size={22}
+              color={isFavourite ? Colors.error : Colors.black}
+              fill={isFavourite ? Colors.error : "transparent"}
+            />
           </TouchableOpacity>
         </View>
 
@@ -242,40 +275,40 @@ export default function RestaurantScreen() {
           })}
         </View>
         {/* Reviews Section */}
-{reviews.length > 0 && (
-  <View style={styles.reviewsSection}>
-    <Text style={styles.reviewsTitle}>
-      Customer Reviews ({reviews.length})
-    </Text>
-    {reviews.map((review) => (
-      <View key={review._id} style={styles.reviewCard}>
-        <View style={styles.reviewHeader}>
-          <View style={styles.reviewAvatar}>
-            <Text style={styles.reviewAvatarText}>
-              {review.customerName.charAt(0).toUpperCase()}
+        {reviews.length > 0 && (
+          <View style={styles.reviewsSection}>
+            <Text style={styles.reviewsTitle}>
+              Customer Reviews ({reviews.length})
             </Text>
+            {reviews.map((review) => (
+              <View key={review._id} style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.reviewAvatar}>
+                    <Text style={styles.reviewAvatarText}>
+                      {review.customerName.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.reviewInfo}>
+                    <Text style={styles.reviewName}>{review.customerName}</Text>
+                    <Text style={styles.reviewDate}>
+                      {new Date(review.createdAt).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                  <View style={styles.reviewRating}>
+                    <Text style={styles.reviewRatingText}>⭐ {review.rating}</Text>
+                  </View>
+                </View>
+                {review.comment ? (
+                  <Text style={styles.reviewComment}>{review.comment}</Text>
+                ) : null}
+              </View>
+            ))}
           </View>
-          <View style={styles.reviewInfo}>
-            <Text style={styles.reviewName}>{review.customerName}</Text>
-            <Text style={styles.reviewDate}>
-              {new Date(review.createdAt).toLocaleDateString("en-US", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </Text>
-          </View>
-          <View style={styles.reviewRating}>
-            <Text style={styles.reviewRatingText}>⭐ {review.rating}</Text>
-          </View>
-        </View>
-        {review.comment ? (
-          <Text style={styles.reviewComment}>{review.comment}</Text>
-        ) : null}
-      </View>
-    ))}
-  </View>
-)}
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -539,72 +572,85 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   reviewsSection: {
-  padding: 16,
-},
-reviewsTitle: {
-  fontSize: 18,
-  fontFamily: "Poppins-Bold",
-  color: Colors.black,
-  marginBottom: 12,
-},
-reviewCard: {
-  backgroundColor: Colors.white,
-  borderRadius: 12,
-  padding: 14,
-  marginBottom: 10,
-  shadowColor: Colors.black,
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.06,
-  shadowRadius: 4,
-  elevation: 2,
-},
-reviewHeader: {
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 10,
-  marginBottom: 8,
-},
-reviewAvatar: {
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  backgroundColor: Colors.primary,
-  justifyContent: "center",
-  alignItems: "center",
-},
-reviewAvatarText: {
-  color: Colors.white,
-  fontFamily: "Poppins-Bold",
-  fontSize: 14,
-},
-reviewInfo: {
-  flex: 1,
-},
-reviewName: {
-  fontSize: 14,
-  fontFamily: "Poppins-SemiBold",
-  color: Colors.black,
-},
-reviewDate: {
-  fontSize: 12,
-  fontFamily: "Poppins-Regular",
-  color: Colors.gray,
-},
-reviewRating: {
-  backgroundColor: Colors.lightGray,
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 20,
-},
-reviewRatingText: {
-  fontSize: 13,
-  fontFamily: "Poppins-Bold",
-  color: Colors.black,
-},
-reviewComment: {
-  fontSize: 13,
-  fontFamily: "Poppins-Regular",
-  color: Colors.gray,
-  lineHeight: 20,
-},
+    padding: 16,
+  },
+  reviewsTitle: {
+    fontSize: 18,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+    marginBottom: 12,
+  },
+  reviewCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  reviewAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  reviewAvatarText: {
+    color: Colors.white,
+    fontFamily: "Poppins-Bold",
+    fontSize: 14,
+  },
+  reviewInfo: {
+    flex: 1,
+  },
+  reviewName: {
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
+    color: Colors.black,
+  },
+  reviewDate: {
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
+    color: Colors.gray,
+  },
+  reviewRating: {
+    backgroundColor: Colors.lightGray,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  reviewRatingText: {
+    fontSize: 13,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+  },
+  reviewComment: {
+    fontSize: 13,
+    fontFamily: "Poppins-Regular",
+    color: Colors.gray,
+    lineHeight: 20,
+  },
+  heartButton: {
+    position: "absolute",
+    top: 50,
+    right: 16,
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
 })

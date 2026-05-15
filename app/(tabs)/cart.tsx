@@ -19,7 +19,9 @@ import { API_URL } from "@/constants"
 export default function CartScreen() {
     const { items, removeItem, updateQuantity, clearCart, getTotalPrice, restaurantId } = useCartStore()
     const { token, user } = useAuthStore()
-    const address = user?.address || ""
+    // const address = user?.address || ""
+    // Use optional chaining and index 0 to get the first address
+const address = user?.addresses[0]?.address || "No address provided";
     const [loading, setLoading] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash")
     const [promoCode, setPromoCode] = useState("")
@@ -274,7 +276,7 @@ export default function CartScreen() {
                 >
                     <Text style={styles.addressTitle}>📍 Delivery Address</Text>
                     <Text style={styles.addressText}>
-                        {user?.address || "Tap to add delivery address"}
+                        {user?.addresses[0]?.address || "Tap to add delivery address"}
                     </Text>
                 </TouchableOpacity>
                 {/* Payment Method */}

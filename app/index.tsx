@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { router } from "expo-router"
 import { useAuthStore } from "@/store/authStore"
-import { View, ActivityIndicator } from "react-native"
+import { View, ActivityIndicator, Image } from "react-native"
 import { Colors } from "@/constants/colors"
 
 export default function Index() {

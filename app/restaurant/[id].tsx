@@ -6,14 +6,29 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Dimensions,
+  Share,
 } from "react-native"
 import { useState, useEffect } from "react"
 import { router, useLocalSearchParams } from "expo-router"
-import { ArrowLeft, ShoppingCart, Plus, Minus, Heart } from "lucide-react-native"
+import {
+  ArrowLeft,
+  Heart,
+  Share2,
+  Clock,
+  MapPin,
+  DollarSign,
+  ShoppingBag,
+  Plus,
+  Minus,
+  ChevronRight,
+} from "lucide-react-native"
 import { Colors } from "@/constants/colors"
 import { useAuthStore } from "@/store/authStore"
 import { useCartStore } from "@/store/cartStore"
 import { API_URL } from "@/constants"
+
+const { width } = Dimensions.get("window")
 
 interface MenuItem {
   _id: string
@@ -22,6 +37,7 @@ interface MenuItem {
   price: number
   category: string
   isAvailable: boolean
+  image?: string
 }
 
 interface Restaurant {
@@ -29,13 +45,16 @@ interface Restaurant {
   name: string
   cuisine: string
   rating: number
+  totalRatings: number
   deliveryTime: string
   deliveryFee: number
   minimumOrder: number
   address: string
   isOpen: boolean
   image: string
+  description: string
 }
+
 interface Review {
   _id: string
   customerName: string
@@ -48,11 +67,12 @@ export default function RestaurantScreen() {
   const { id } = useLocalSearchParams()
   const { token, user, updateUser } = useAuthStore()
   const { items, addItem, removeItem, getTotalItems, getTotalPrice } = useCartStore()
-  const [reviews, setReviews] = useState<Review[]>([])
+
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [selectedCategory, setSelectedCategory] = useState("Popular")
   const [isFavourite, setIsFavourite] = useState(
     user?.favourites?.includes(id as string) || false
   )
@@ -60,25 +80,6 @@ export default function RestaurantScreen() {
   useEffect(() => {
     fetchData()
   }, [])
-
-  const handleToggleFavourite = async () => {
-    try {
-      const response = await fetch(
-        `${API_URL}/auth/favourites/${id}`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-      const data = await response.json()
-      if (response.ok) {
-        setIsFavourite(data.isFavourite)
-        updateUser({ favourites: data.favourites })
-      }
-    } catch (error) {
-      console.error("Error toggling favourite:", error)
-    }
-  }
 
   const fetchData = async () => {
     try {
@@ -106,10 +107,36 @@ export default function RestaurantScreen() {
     }
   }
 
-  const categories = ["All", ...new Set(menuItems.map((item) => item.category))]
+  const handleToggleFavourite = async () => {
+    try {
+      const response = await fetch(`${API_URL}/auth/favourites/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await response.json()
+      if (response.ok) {
+        setIsFavourite(data.isFavourite)
+        updateUser({ favourites: data.favourites })
+      }
+    } catch (error) {
+      console.error("Error toggling favourite:", error)
+    }
+  }
 
-  const filteredItems = selectedCategory === "All"
-    ? menuItems
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Check out ${restaurant?.name} on SwiftBite! 🍔`,
+      })
+    } catch (error) {
+      console.error("Error sharing:", error)
+    }
+  }
+
+  const categories = ["Popular", ...new Set(menuItems.map((item) => item.category))]
+
+  const filteredItems = selectedCategory === "Popular"
+    ? menuItems.slice(0, 5)
     : menuItems.filter((item) => item.category === selectedCategory)
 
   const getItemQuantity = (itemId: string) => {
@@ -129,152 +156,253 @@ export default function RestaurantScreen() {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
 
-        {/* Header Image */}
-        <View style={styles.heroImage}>
+        {/* Hero Image */}
+        <View style={styles.heroContainer}>
           {restaurant?.image ? (
             <Image
               source={{ uri: restaurant.image }}
-              style={styles.heroImageFull}
+              style={styles.heroImage}
               resizeMode="cover"
             />
           ) : (
-            <Text style={styles.heroEmoji}>
-              {restaurant?.cuisine === "American" ? "🍔" :
-                restaurant?.cuisine === "Italian" ? "🍕" :
-                  restaurant?.cuisine === "Japanese" ? "🍣" : "🍽️"}
-            </Text>
+            <View style={styles.heroPlaceholder}>
+              <Text style={styles.heroEmoji}>
+                {restaurant?.cuisine === "American" ? "🍔" :
+                 restaurant?.cuisine === "Italian" ? "🍕" :
+                 restaurant?.cuisine === "Japanese" ? "🍣" : "🍽️"}
+              </Text>
+            </View>
           )}
 
-          {/* Back button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={22} color={Colors.black} />
-          </TouchableOpacity>
-          {/* heartButton */}
-          <TouchableOpacity
-            style={styles.heartButton}
-            onPress={handleToggleFavourite}
-          >
-            <Heart
-              size={22}
-              color={isFavourite ? Colors.error : Colors.black}
-              fill={isFavourite ? Colors.error : "transparent"}
-            />
-          </TouchableOpacity>
+          {/* Gradient overlay */}
+          <View style={styles.heroOverlay} />
+
+          {/* Action Buttons */}
+          <View style={styles.heroButtons}>
+            <TouchableOpacity
+              style={styles.heroBtn}
+              onPress={() => router.back()}
+            >
+              <ArrowLeft size={20} color={Colors.black} />
+            </TouchableOpacity>
+            <View style={styles.heroBtnsRight}>
+              <TouchableOpacity
+                style={styles.heroBtn}
+                onPress={handleToggleFavourite}
+              >
+                <Heart
+                  size={20}
+                  color={isFavourite ? Colors.error : Colors.black}
+                  fill={isFavourite ? Colors.error : "transparent"}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.heroBtn}
+                onPress={handleShare}
+              >
+                <Share2 size={20} color={Colors.black} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
-        {/* Restaurant Info */}
+        {/* Restaurant Info Card */}
         <View style={styles.infoCard}>
-          <View style={styles.infoHeader}>
-            <Text style={styles.restaurantName}>{restaurant?.name}</Text>
-            <View style={[
-              styles.statusBadge,
-              { backgroundColor: restaurant?.isOpen ? Colors.success : Colors.error }
-            ]}>
-              <Text style={styles.statusText}>
-                {restaurant?.isOpen ? "Open" : "Closed"}
+
+          {/* Logo + Name Row */}
+          <View style={styles.logoNameRow}>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoEmoji}>
+                {restaurant?.cuisine === "American" ? "🍔" :
+                 restaurant?.cuisine === "Italian" ? "🍕" :
+                 restaurant?.cuisine === "Japanese" ? "🍣" : "🍽️"}
               </Text>
+            </View>
+            <View style={styles.nameContainer}>
+              <View style={styles.nameRow}>
+                <Text style={styles.restaurantName}>{restaurant?.name}</Text>
+                <Text style={styles.verifiedBadge}>✅</Text>
+              </View>
+              <Text style={styles.cuisineText}>
+                {restaurant?.cuisine} • Fast Food • Casual
+              </Text>
+              <View style={styles.ratingRow}>
+                <Text style={styles.ratingText}>
+                  ⭐ {restaurant?.rating || "New"}
+                </Text>
+                {restaurant?.totalRatings ? (
+                  <Text style={styles.ratingCount}>
+                    ({restaurant.totalRatings}+)
+                  </Text>
+                ) : null}
+                <Text style={styles.metaDot}>•</Text>
+                <Text style={styles.metaText}>{restaurant?.deliveryTime}</Text>
+                <Text style={styles.metaDot}>•</Text>
+                <Text style={styles.metaText}>
+                  ${restaurant?.deliveryFee} Delivery
+                </Text>
+              </View>
             </View>
           </View>
 
-          <Text style={styles.cuisine}>{restaurant?.cuisine}</Text>
-
-          <View style={styles.metaRow}>
-            <Text style={styles.metaItem}>⭐ {restaurant?.rating || "New"}</Text>
-            <Text style={styles.metaDot}>•</Text>
-            <Text style={styles.metaItem}>🕐 {restaurant?.deliveryTime}</Text>
-            <Text style={styles.metaDot}>•</Text>
-            <Text style={styles.metaItem}>
-              {restaurant?.deliveryFee === 0
-                ? "Free delivery"
-                : `$${restaurant?.deliveryFee} delivery`}
+          {/* Free delivery banner */}
+          <View style={styles.freeDeliveryBanner}>
+            <Text style={styles.freeDeliveryText}>
+              🛵 Free delivery on orders over ${restaurant?.minimumOrder || 20}
             </Text>
           </View>
 
-          <View style={styles.minOrder}>
-            <Text style={styles.minOrderText}>
-              Minimum order: ${restaurant?.minimumOrder}
-            </Text>
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Clock size={20} color={Colors.gray} />
+              <Text style={styles.statValue}>{restaurant?.deliveryTime}</Text>
+              <Text style={styles.statLabel}>Delivery Time</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <MapPin size={20} color={Colors.gray} />
+              <Text style={styles.statValue}>1.8 km</Text>
+              <Text style={styles.statLabel}>Distance</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <DollarSign size={20} color={Colors.gray} />
+              <Text style={styles.statValue}>$$</Text>
+              <Text style={styles.statLabel}>Delivery Fee</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <ShoppingBag size={20} color={Colors.gray} />
+              <Text style={styles.statValue}>10K+</Text>
+              <Text style={styles.statLabel}>Orders</Text>
+            </View>
           </View>
+
+          {/* Promo Banner */}
+          <TouchableOpacity style={styles.promoBanner}>
+            <View style={styles.promoIconContainer}>
+              <Text style={styles.promoIcon}>%</Text>
+            </View>
+            <View style={styles.promoInfo}>
+              <Text style={styles.promoTitle}>50% OFF up to $10</Text>
+              <Text style={styles.promoSubtitle}>
+                Use code WELCOME20 | On orders over $20
+              </Text>
+            </View>
+            <View style={styles.promoSeeDetails}>
+              <Text style={styles.promoSeeDetailsText}>See details</Text>
+              <ChevronRight size={14} color="#4CAF50" />
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Category Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categories}
-          contentContainerStyle={styles.categoriesContent}
-        >
-          {categories.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[
-                styles.categoryTab,
-                selectedCategory === cat && styles.categoryTabActive,
-              ]}
-              onPress={() => setSelectedCategory(cat)}
-            >
-              <Text style={[
-                styles.categoryTabText,
-                selectedCategory === cat && styles.categoryTabTextActive,
-              ]}>
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View style={styles.tabsContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabs}
+          >
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={styles.tab}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <Text style={[
+                  styles.tabText,
+                  selectedCategory === cat && styles.tabTextActive,
+                ]}>
+                  {cat}
+                </Text>
+                {selectedCategory === cat && (
+                  <View style={styles.tabIndicator} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <View style={styles.tabBorder} />
+        </View>
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
+          <View style={styles.menuSectionHeader}>
+            <Text style={styles.menuSectionTitle}>
+              {selectedCategory} Items
+            </Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAll}>View All</Text>
+            </TouchableOpacity>
+          </View>
+
           {filteredItems.map((item) => {
             const quantity = getItemQuantity(item._id)
             return (
               <View key={item._id} style={styles.menuItem}>
-                <View style={styles.menuItemImage}>
-                  <Text style={styles.menuItemEmoji}>🍽️</Text>
+                {/* Item Image */}
+                <View style={styles.menuItemImageContainer}>
+                  {item.image ? (
+                    <Image
+                      source={{ uri: item.image }}
+                      style={styles.menuItemImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.menuItemImagePlaceholder}>
+                      <Text style={styles.menuItemEmoji}>🍽️</Text>
+                    </View>
+                  )}
                 </View>
 
+                {/* Item Info */}
                 <View style={styles.menuItemInfo}>
                   <Text style={styles.menuItemName}>{item.name}</Text>
                   <Text style={styles.menuItemDesc} numberOfLines={2}>
                     {item.description}
                   </Text>
-                  <Text style={styles.menuItemPrice}>${item.price.toFixed(2)}</Text>
-                </View>
+                  <View style={styles.menuItemRating}>
+                    <Text style={styles.menuItemRatingText}>
+                      ⭐ 4.5 | 1.2k+ orders
+                    </Text>
+                  </View>
+                  <View style={styles.menuItemBottom}>
+                    <Text style={styles.menuItemPrice}>
+                      ${item.price.toFixed(2)}
+                    </Text>
 
-                <View style={styles.quantityControl}>
-                  {quantity === 0 ? (
-                    <TouchableOpacity
-                      style={styles.addButton}
-                      onPress={() => addItem(item as any, id as string)}
-                    >
-                      <Plus size={20} color={Colors.white} />
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={styles.counter}>
+                    {quantity === 0 ? (
                       <TouchableOpacity
-                        style={styles.counterButton}
-                        onPress={() => removeItem(item._id)}
-                      >
-                        <Minus size={16} color={Colors.primary} />
-                      </TouchableOpacity>
-                      <Text style={styles.counterText}>{quantity}</Text>
-                      <TouchableOpacity
-                        style={styles.counterButton}
+                        style={styles.addButton}
                         onPress={() => addItem(item as any, id as string)}
                       >
-                        <Plus size={16} color={Colors.primary} />
+                        <Plus size={18} color={Colors.primary} />
                       </TouchableOpacity>
-                    </View>
-                  )}
+                    ) : (
+                      <View style={styles.quantityControl}>
+                        <TouchableOpacity
+                          style={styles.qtyBtn}
+                          onPress={() => removeItem(item._id)}
+                        >
+                          <Minus size={14} color={Colors.white} />
+                        </TouchableOpacity>
+                        <Text style={styles.qtyText}>{quantity}</Text>
+                        <TouchableOpacity
+                          style={styles.qtyBtn}
+                          onPress={() => addItem(item as any, id as string)}
+                        >
+                          <Plus size={14} color={Colors.white} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
             )
           })}
         </View>
-        {/* Reviews Section */}
+
+        {/* Reviews */}
         {reviews.length > 0 && (
           <View style={styles.reviewsSection}>
             <Text style={styles.reviewsTitle}>
@@ -298,9 +426,7 @@ export default function RestaurantScreen() {
                       })}
                     </Text>
                   </View>
-                  <View style={styles.reviewRating}>
-                    <Text style={styles.reviewRatingText}>⭐ {review.rating}</Text>
-                  </View>
+                  <Text style={styles.reviewRating}>⭐ {review.rating}</Text>
                 </View>
                 {review.comment ? (
                   <Text style={styles.reviewComment}>{review.comment}</Text>
@@ -313,19 +439,25 @@ export default function RestaurantScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Cart Button */}
+      {/* Cart Footer */}
       {getTotalItems() > 0 && (
-        <View style={styles.cartBar}>
+        <View style={styles.cartFooter}>
+          <View style={styles.cartFooterLeft}>
+            <View style={styles.cartBagIcon}>
+              <ShoppingBag size={20} color={Colors.white} />
+            </View>
+            <View>
+              <Text style={styles.cartFooterItems}>
+                {getTotalItems()} Items • ${getTotalPrice().toFixed(2)}
+              </Text>
+              <Text style={styles.cartFooterLabel}>Your cart</Text>
+            </View>
+          </View>
           <TouchableOpacity
-            style={styles.cartButton}
+            style={styles.viewCartButton}
             onPress={() => router.push("/(tabs)/cart")}
           >
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
-            </View>
-            <ShoppingCart size={20} color={Colors.white} />
-            <Text style={styles.cartButtonText}>View Cart</Text>
-            <Text style={styles.cartTotal}>${getTotalPrice().toFixed(2)}</Text>
+            <Text style={styles.viewCartText}>View Cart 🛒</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -343,12 +475,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  heroImageFull: {
+  heroContainer: {
+    width: "100%",
+    height: 280,
+    position: "relative",
+  },
+  heroImage: {
     width: "100%",
     height: "100%",
   },
-  heroImage: {
-    height: 220,
+  heroPlaceholder: {
+    width: "100%",
+    height: "100%",
     backgroundColor: Colors.lightGray,
     justifyContent: "center",
     alignItems: "center",
@@ -356,223 +494,352 @@ const styles = StyleSheet.create({
   heroEmoji: {
     fontSize: 80,
   },
-  backButton: {
+  heroOverlay: {
     position: "absolute",
-    top: 50,
-    left: 16,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    backgroundColor: "rgba(0,0,0,0.1)",
+  },
+  heroButtons: {
+    position: "absolute",
+    top: 56,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+  },
+  heroBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: Colors.white,
-    borderRadius: 20,
-    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
+  },
+  heroBtnsRight: {
+    flexDirection: "row",
+    gap: 10,
   },
   infoCard: {
     backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
     padding: 20,
-    marginBottom: 8,
+    paddingBottom: 0,
   },
-  infoHeader: {
+  logoNameRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 14,
+    marginBottom: 12,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    backgroundColor: Colors.black,
+    justifyContent: "center",
     alignItems: "center",
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  logoEmoji: {
+    fontSize: 36,
+  },
+  nameContainer: {
+    flex: 1,
+    justifyContent: "center",
+    gap: 4,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   restaurantName: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: "Poppins-Bold",
     color: Colors.black,
-    flex: 1,
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
+  verifiedBadge: {
+    fontSize: 16,
   },
-  statusText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontFamily: "Poppins-SemiBold",
-  },
-  cuisine: {
-    fontSize: 14,
+  cuisineText: {
+    fontSize: 13,
     fontFamily: "Poppins-Regular",
     color: Colors.gray,
-    marginTop: 4,
   },
-  metaRow: {
+  ratingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
-    gap: 8,
+    gap: 6,
+    flexWrap: "wrap",
   },
-  metaItem: {
+  ratingText: {
     fontSize: 13,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+  },
+  ratingCount: {
+    fontSize: 12,
     fontFamily: "Poppins-Regular",
     color: Colors.gray,
   },
   metaDot: {
     color: Colors.gray,
+    fontSize: 12,
   },
-  minOrder: {
-    marginTop: 10,
-    backgroundColor: Colors.lightGray,
-    padding: 8,
-    borderRadius: 8,
-  },
-  minOrderText: {
+  metaText: {
     fontSize: 12,
     fontFamily: "Poppins-Regular",
     color: Colors.gray,
   },
-  categories: {
-    backgroundColor: Colors.white,
-    marginBottom: 8,
+  freeDeliveryBanner: {
+    backgroundColor: "#E8F5E9",
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 16,
   },
-  categoriesContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  categoryTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.lightGray,
-  },
-  categoryTabActive: {
-    backgroundColor: Colors.primary,
-  },
-  categoryTabText: {
+  freeDeliveryText: {
+    fontSize: 12,
     fontFamily: "Poppins-SemiBold",
-    fontSize: 13,
+    color: "#4CAF50",
+    textAlign: "center",
+  },
+  statsRow: {
+    flexDirection: "row",
+    backgroundColor: Colors.lightGray,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: 8,
+  },
+  statValue: {
+    fontSize: 14,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontFamily: "Poppins-Regular",
     color: Colors.gray,
   },
-  categoryTabTextActive: {
+  promoBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FFF4",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#C3E6CB",
+  },
+  promoIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#4CAF50",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  promoIcon: {
     color: Colors.white,
+    fontSize: 16,
+    fontFamily: "Poppins-Bold",
+  },
+  promoInfo: {
+    flex: 1,
+  },
+  promoTitle: {
+    fontSize: 13,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+  },
+  promoSubtitle: {
+    fontSize: 11,
+    fontFamily: "Poppins-Regular",
+    color: Colors.gray,
+    marginTop: 2,
+  },
+  promoSeeDetails: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  promoSeeDetailsText: {
+    fontSize: 12,
+    fontFamily: "Poppins-Bold",
+    color: "#4CAF50",
+  },
+  tabsContainer: {
+    backgroundColor: Colors.white,
+    marginTop: 8,
+  },
+  tabs: {
+    paddingHorizontal: 20,
+    gap: 24,
+  },
+  tab: {
+    paddingVertical: 14,
+    position: "relative",
+  },
+  tabText: {
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
+    color: Colors.gray,
+  },
+  tabTextActive: {
+    color: Colors.primary,
+  },
+  tabIndicator: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
+  },
+  tabBorder: {
+    height: 1,
+    backgroundColor: Colors.border,
   },
   menuSection: {
     padding: 16,
-    gap: 12,
+  },
+  menuSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  menuSectionTitle: {
+    fontSize: 18,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+  },
+  viewAll: {
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
+    color: Colors.primary,
   },
   menuItem: {
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 16,
+    marginBottom: 12,
     flexDirection: "row",
-    alignItems: "center",
+    overflow: "hidden",
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  menuItemImageContainer: {
+    width: 120,
+    height: 120,
   },
   menuItemImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 10,
+    width: "100%",
+    height: "100%",
+  },
+  menuItemImagePlaceholder: {
+    width: "100%",
+    height: "100%",
     backgroundColor: Colors.lightGray,
     justifyContent: "center",
     alignItems: "center",
   },
   menuItemEmoji: {
-    fontSize: 32,
+    fontSize: 40,
   },
   menuItemInfo: {
     flex: 1,
-    paddingHorizontal: 12,
+    padding: 12,
+    justifyContent: "space-between",
   },
   menuItemName: {
-    fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
+    fontSize: 15,
+    fontFamily: "Poppins-Bold",
     color: Colors.black,
   },
   menuItemDesc: {
     fontSize: 12,
     fontFamily: "Poppins-Regular",
     color: Colors.gray,
-    marginTop: 2,
+    marginTop: 4,
+    lineHeight: 18,
   },
-  menuItemPrice: {
-    fontSize: 15,
-    fontFamily: "Poppins-Bold",
-    color: Colors.primary,
+  menuItemRating: {
     marginTop: 4,
   },
-  quantityControl: {
-    alignItems: "center",
+  menuItemRatingText: {
+    fontSize: 11,
+    fontFamily: "Poppins-Regular",
+    color: Colors.gray,
   },
-  addButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 20,
-    padding: 8,
-  },
-  counter: {
+  menuItemBottom: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 8,
+    marginTop: 8,
   },
-  counterButton: {
-    backgroundColor: Colors.lightGray,
-    borderRadius: 16,
-    padding: 6,
-  },
-  counterText: {
+  menuItemPrice: {
     fontSize: 16,
     fontFamily: "Poppins-Bold",
     color: Colors.black,
-    minWidth: 20,
-    textAlign: "center",
   },
-  cartBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    backgroundColor: "transparent",
-  },
-  cartButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  cartBadge: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
-  cartBadgeText: {
-    fontSize: 12,
-    fontFamily: "Poppins-Bold",
-    color: Colors.primary,
+  quantityControl: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 20,
+    paddingHorizontal: 4,
+    gap: 8,
   },
-  cartButtonText: {
-    fontSize: 16,
+  qtyBtn: {
+    padding: 6,
+  },
+  qtyText: {
+    fontSize: 14,
     fontFamily: "Poppins-Bold",
     color: Colors.white,
-    flex: 1,
+    minWidth: 16,
     textAlign: "center",
-  },
-  cartTotal: {
-    fontSize: 16,
-    fontFamily: "Poppins-Bold",
-    color: Colors.white,
   },
   reviewsSection: {
     padding: 16,
+    paddingTop: 0,
   },
   reviewsTitle: {
     fontSize: 18,
@@ -624,12 +891,6 @@ const styles = StyleSheet.create({
     color: Colors.gray,
   },
   reviewRating: {
-    backgroundColor: Colors.lightGray,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  reviewRatingText: {
     fontSize: 13,
     fontFamily: "Poppins-Bold",
     color: Colors.black,
@@ -640,17 +901,57 @@ const styles = StyleSheet.create({
     color: Colors.gray,
     lineHeight: 20,
   },
-  heartButton: {
+  cartFooter: {
     position: "absolute",
-    top: 50,
-    right: 16,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: Colors.white,
-    borderRadius: 20,
-    padding: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  cartFooterLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  cartBagIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cartFooterItems: {
+    fontSize: 14,
+    fontFamily: "Poppins-Bold",
+    color: Colors.black,
+  },
+  cartFooterLabel: {
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
+    color: Colors.gray,
+  },
+  viewCartButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  viewCartText: {
+    color: Colors.white,
+    fontFamily: "Poppins-Bold",
+    fontSize: 14,
   },
 })

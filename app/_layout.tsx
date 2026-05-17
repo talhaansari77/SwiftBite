@@ -14,7 +14,9 @@ export default function RootLayout() {
   })
 
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync()
+    if (loaded) {
+      SplashScreen.hideAsync()
+    }
   }, [loaded])
 
   if (!loaded) return null
@@ -31,6 +33,9 @@ export default function RootLayout() {
         <Stack.Screen name="addresses" />
         <Stack.Screen name="favourites" />
         <Stack.Screen name="wallet" />
+        <Stack.Screen name="coupons" />
+        <Stack.Screen name="support" />
+        <Stack.Screen name="edit-profile" />
       </Stack>
     </>
   )

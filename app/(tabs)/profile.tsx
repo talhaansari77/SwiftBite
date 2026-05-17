@@ -73,14 +73,14 @@ export default function ProfileScreen() {
       bg: "#F5EEFF",
       title: "SwiftBite Pro",
       subtitle: "Your membership & benefits",
-      onPress: () => { },
+      onPress: () => router.push("/coupons" as any),
     },
     {
       icon: <Headphones size={18} color="#FF9500" />,
       bg: "#FFF5E5",
       title: "Help & Support",
       subtitle: "FAQs, refunds & more",
-      onPress: () => { },
+      onPress: () => router.push("/support" as any),
     },
   ]
 
@@ -238,11 +238,11 @@ export default function ProfileScreen() {
         {/* Edit Profile Button */}
         <View style={styles.section}>
           <TouchableOpacity
-            style={styles.editProfileButton}
-            onPress={() => router.push("/(tabs)/edit-profile" as any)}
-          >
-            <Text style={styles.editProfileText}>✏️ Edit Profile</Text>
-          </TouchableOpacity>
+  style={styles.editProfileButton}
+  onPress={() => router.push("/edit-profile" as any)}
+>
+  <Text style={styles.editProfileText}>✏️ Edit Profile</Text>
+</TouchableOpacity>
         </View>
 
         {/* Logout */}

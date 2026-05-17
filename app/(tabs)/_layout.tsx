@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router"
-import { Home, ShoppingBag, ShoppingCart, User } from "lucide-react-native"
+import { Home, ShoppingBag, ShoppingCart, User, Tag,Search } from "lucide-react-native"
 import { Colors } from "@/constants/colors"
 
 export default function TabsLayout() {
@@ -41,14 +41,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="offers"
         options={{
-          title: "Profile",
+          title: "Offers",
           tabBarIcon: ({ color, size }) => (
-            <User color={color} size={size} />
+            <Tag color={color} size={size} />
           ),
         }}
       />
+
       <Tabs.Screen
         name="cart"
         options={{
@@ -58,6 +59,25 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <User color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen  
+  name="search"  
+  options={{    
+    title: "Search",    
+    href: null, // 👈 This completely hides the tab icon from the bottom bar
+    tabBarIcon: ({ color, size }) => (      
+      <Search color={color} size={size} />    
+    ),  
+  }}
+/>
     </Tabs>
   )
 }

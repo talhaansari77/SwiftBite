@@ -78,28 +78,28 @@ export default function OrderDetailScreen() {
     longitude: 47.9774 + 0.01,
   })
   useEffect(() => {
-  if (order?.status === "on_the_way") {
-    const targetLat = region.latitude
-    const targetLng = region.longitude
+    if (order?.status === "on_the_way") {
+      const targetLat = region.latitude
+      const targetLng = region.longitude
 
-    const interval = setInterval(() => {
-      setDriverLocation((prev) => {
-        const newLat = prev.latitude - 0.0005
-        const newLng = prev.longitude - 0.0005
+      const interval = setInterval(() => {
+        setDriverLocation((prev) => {
+          const newLat = prev.latitude - 0.0005
+          const newLng = prev.longitude - 0.0005
 
-        // Stop when driver reaches customer
-        if (newLat <= targetLat && newLng <= targetLng) {
-          clearInterval(interval)
-          return { latitude: targetLat, longitude: targetLng }
-        }
+          // Stop when driver reaches customer
+          if (newLat <= targetLat && newLng <= targetLng) {
+            clearInterval(interval)
+            return { latitude: targetLat, longitude: targetLng }
+          }
 
-        return { latitude: newLat, longitude: newLng }
-      })
-    }, 2000)
+          return { latitude: newLat, longitude: newLng }
+        })
+      }, 2000)
 
-    return () => clearInterval(interval)
-  }
-}, [order?.status])
+      return () => clearInterval(interval)
+    }
+  }, [order?.status])
 
   useEffect(() => {
     fetchOrder()
@@ -258,8 +258,12 @@ export default function OrderDetailScreen() {
             <MapView
               style={styles.map}
               provider={PROVIDER_DEFAULT}
+              mapType="standard"
               initialRegion={region}
               scrollEnabled={false}
+              zoomEnabled={false}
+              rotateEnabled={false}
+              pitchEnabled={false}
             >
               {/* Restaurant Marker */}
               {/* Driver/Restaurant Marker */}

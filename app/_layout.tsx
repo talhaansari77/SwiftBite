@@ -36,6 +36,7 @@ export default function RootLayout() {
         <Stack.Screen name="coupons" />
         <Stack.Screen name="support" />
         <Stack.Screen name="edit-profile" />
+        <Stack.Screen name="onboarding" />
       </Stack>
     </>
   )

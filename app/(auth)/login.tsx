@@ -27,53 +27,42 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false)
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      setError("Please fill in all fields")
+  if (!email || !password) {
+    setError("Please fill in all fields")
+    return
+  }
+
+  setLoading(true)
+  setError("")
+
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      setError(data.message || "Login failed")
       return
     }
 
-    setLoading(true)
-    setError("")
+    // setUser now automatically saves to AsyncStorage
+    await setUser(data.user, data.token)
 
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.message || "Login failed")
-        return
-      }
-
-
-      // Save or clear credentials based on remember me
-      if (rememberMe) {
-        await AsyncStorage.setItem("savedEmail", email)
-        await AsyncStorage.setItem("savedPassword", password)
-        await AsyncStorage.setItem("rememberMe", "true")
-      } else {
-        await AsyncStorage.removeItem("savedEmail")
-        await AsyncStorage.removeItem("savedPassword")
-        await AsyncStorage.removeItem("rememberMe")
-      }
-
-      setUser(data.user, data.token)
-
-      if (data.user.role === "restaurant") {
-        router.replace("/(owner)/dashboard" as any)
-      } else {
-        router.replace("/(tabs)/home")
-      }
-    } catch (err) {
-      setError("Something went wrong. Please try again.")
-    } finally {
-      setLoading(false)
+    if (data.user.role === "restaurant") {
+      router.replace("/(owner)/dashboard" as any)
+    } else {
+      router.replace("/(tabs)/home")
     }
+  } catch (err) {
+    setError("Something went wrong. Please try again.")
+  } finally {
+    setLoading(false)
   }
+}
 
   useEffect(() => {
     loadSavedCredentials()
